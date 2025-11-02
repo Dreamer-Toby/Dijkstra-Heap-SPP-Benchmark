@@ -1,37 +1,41 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-// =========================
-// 图结构定义
-// =========================
-
+// Represents a single directed edge in an adjacency list.
 typedef struct Edge {
-    int to;               // 目标节点
-    double weight;        // 边权重（使用 double 以兼容浮点距离）
-    struct Edge* next;    // 下一条边
+    int to;               // Target node index (0-based)
+    double weight;        // Edge weight (distance)
+    struct Edge* next;    // Next edge in the list
 } Edge;
 
+// Represents the graph using adjacency lists.
 typedef struct {
-    int num_nodes;        // 节点总数
-    long num_edges;       // 边总数
-    Edge** adj;           // 正向邻接表
-    Edge** rev_adj;       // 反向邻接表（用于双向Dijkstra）
+    int num_nodes;        // Total node count
+    long num_edges;       // Total edge count
+    
+    // Forward adjacency lists (adj[i] = list of edges from i)
+    Edge** adj;
+    
+    // Reverse adjacency lists (for bidirectional search)
+    // rev_adj[i] = list of edges terminating at i
+    Edge** rev_adj;
 } Graph;
 
-// =========================
-// 图的操作函数接口
-// =========================
 
-// 创建空图
+// Allocates and initializes an empty graph with 'num_nodes' nodes.
 Graph* create_graph(int num_nodes);
 
-// 添加有向边
+// Adds a single directed edge (u -> v) to the graph's forward list (g->adj).
 void add_edge(Graph* g, int u, int v, double weight);
 
-// 从 DIMACS 文件加载图
+/**
+ * Loads a graph from a DIMACS file.
+ * Parses 'p sp' and 'a' lines. Converts 1-based indices to 0-based.
+ * Populates *both* the forward (adj) and reverse (rev_adj) lists.
+ */
 Graph* load_dimacs_graph(const char* filename);
 
-// 释放图内存
+// Frees all memory associated with the graph, including all edges.
 void free_graph(Graph* g);
 
 #endif // GRAPH_H

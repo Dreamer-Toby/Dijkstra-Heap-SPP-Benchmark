@@ -5,6 +5,7 @@
 #include <math.h>
 #include "graph.h"
 
+// Platform-specific includes and definitions for directory creation
 #ifdef _WIN32
 #include <direct.h>
 #define CREATE_DIR(path) _mkdir(path)
@@ -14,20 +15,21 @@
 #endif
 
 /**
- * @brief 创建目录（如果不存在）
- * @param path 目录路径
+ * Creates a directory if it does not already exist.
+ * This is a wrapper for platform-specific mkdir functions.
  */
 void create_directory(const char* path) {
 #ifdef _WIN32
     _mkdir(path);
 #else
+    // Set default permissions for new directory on non-Windows
     mkdir(path, 0755);
 #endif
 }
 
 /**
- * @brief 生成空查询文件（用于测试空图情况）
- * @param folder 查询文件保存的文件夹路径
+ * Generates an empty query file.
+ * Used for testing the benchmark's behavior with no input.
  */
 void generate_empty_queries(const char* folder) {
     char filename[256];
@@ -35,7 +37,7 @@ void generate_empty_queries(const char* folder) {
     
     FILE* fp = fopen(filename, "w");
     if (fp) {
-        // 空文件 - 没有查询对
+        // File is created and left empty
         fclose(fp);
         printf("Generated empty queries: %s\n", filename);
     } else {
@@ -44,9 +46,8 @@ void generate_empty_queries(const char* folder) {
 }
 
 /**
- * @brief 生成单节点图查询文件
- * @param folder 查询文件保存的文件夹路径
- * @param g 图结构指针
+ * Generates a query file for a single-node graph.
+ * Writes a single self-loop query (0 0) if the graph has nodes.
  */
 void generate_single_node_queries(const char* folder, Graph* g) {
     char filename[256];
@@ -55,7 +56,7 @@ void generate_single_node_queries(const char* folder, Graph* g) {
     FILE* fp = fopen(filename, "w");
     if (fp) {
         if (g->num_nodes >= 1) {
-            // 单个节点的自环查询
+            // A query from the first node (index 0) to itself
             fprintf(fp, "0 0\n");
             printf("Generated single node queries: %s\n", filename);
         } else {
@@ -68,10 +69,8 @@ void generate_single_node_queries(const char* folder, Graph* g) {
 }
 
 /**
- * @brief 生成完全图查询文件
- * @param folder 查询文件保存的文件夹路径
- * @param g 图结构指针
- * @param count 要生成的查询对数量
+ * Generates a file with random query pairs (s, t) where s != t.
+ * Uses a fixed seed (12345) for reproducible results.
  */
 void generate_complete_graph_queries(const char* folder, Graph* g, int count) {
     char filename[256];
@@ -80,6 +79,7 @@ void generate_complete_graph_queries(const char* folder, Graph* g, int count) {
     FILE* fp = fopen(filename, "w");
     if (fp) {
         if (g->num_nodes >= 2) {
+            // Use a fixed seed for predictable "complete graph" queries
             srand(12345);
             int generated = 0;
             
@@ -88,7 +88,7 @@ void generate_complete_graph_queries(const char* folder, Graph* g, int count) {
                 int s = rand() % g->num_nodes;
                 int t = rand() % g->num_nodes;
                 
-                if (s != t) { // 避免自环
+                if (s != t) { // Avoid self-loops
                     fprintf(fp, "%d %d\n", s, t);
                     generated++;
                     
@@ -108,10 +108,8 @@ void generate_complete_graph_queries(const char* folder, Graph* g, int count) {
 }
 
 /**
- * @brief 生成正常情况查询文件（考虑图的稀疏性）
- * @param folder 查询文件保存的文件夹路径
- * @param g 图结构指针
- * @param count 要生成的查询对数量
+ * Generates a file with random query pairs, seeded by current time.
+ * This provides a different set of queries on each run.
  */
 void generate_normal_queries(const char* folder, Graph* g, int count) {
     char filename[256];
@@ -120,10 +118,12 @@ void generate_normal_queries(const char* folder, Graph* g, int count) {
     FILE* fp = fopen(filename, "w");
     if (fp) {
         if (g->num_nodes >= 2) {
-            srand(time(NULL)); // 使用时间种子，避免重复
+            // Use time-based seed for "normal" (non-repeating) queries
+            srand(time(NULL));
             int generated = 0;
             int attempts = 0;
-            const int MAX_ATTEMPTS = count * 100; // 增加尝试次数
+            // Set a high attempt limit to avoid infinite loops on sparse graphs
+            const int MAX_ATTEMPTS = count * 100;
             
             printf("Generating normal queries...\n");
             
@@ -132,7 +132,7 @@ void generate_normal_queries(const char* folder, Graph* g, int count) {
                 int t = rand() % g->num_nodes;
                 attempts++;
                 
-                // 只需要确保节点索引有效且不是自环
+                // We only require s != t for this test set
                 if (s != t) {
                     fprintf(fp, "%d %d\n", s, t);
                     generated++;
@@ -157,10 +157,8 @@ void generate_normal_queries(const char* folder, Graph* g, int count) {
 }
 
 /**
- * @brief 生成大规模查询文件
- * @param folder 查询文件保存的文件夹路径
- * @param g 图结构指针
- * @param count 要生成的查询对数量
+ * Generates a file with a large number of random query pairs.
+ * Identical logic to generate_normal_queries, just for a larger 'count'.
  */
 void generate_large_scale_queries(const char* folder, Graph* g, int count) {
     char filename[256];
@@ -169,10 +167,10 @@ void generate_large_scale_queries(const char* folder, Graph* g, int count) {
     FILE* fp = fopen(filename, "w");
     if (fp) {
         if (g->num_nodes >= 2) {
-            srand(time(NULL)); // 使用时间种子，避免重复
+            srand(time(NULL)); // Use time-based seed
             int generated = 0;
             int attempts = 0;
-            const int MAX_ATTEMPTS = count * 100; // 增加尝试次数
+            const int MAX_ATTEMPTS = count * 100;
             
             printf("Generating large scale queries...\n");
             
@@ -206,9 +204,9 @@ void generate_large_scale_queries(const char* folder, Graph* g, int count) {
 }
 
 /**
- * @brief 生成小规模测试查询文件（使用预定义的节点对）
- * @param folder 查询文件保存的文件夹路径
- * @param g 图结构指针
+ * Generates a small test file (10 queries) using a
+ * predefined list of node pairs. This ensures a consistent,
+ * small benchmark.
  */
 void generate_small_test_queries(const char* folder, Graph* g) {
     char filename[256];
@@ -218,7 +216,7 @@ void generate_small_test_queries(const char* folder, Graph* g) {
     if (fp) {
         printf("Generating small test queries from predefined node pairs...\n");
         
-        // 从你提供的节点对中选取10对
+        // A hardcoded list of 20 query pairs (10 pairs, reversed)
         int predefined_pairs[][2] = {
             {1, 2},
             {2, 1},
@@ -243,19 +241,19 @@ void generate_small_test_queries(const char* folder, Graph* g) {
         };
         
         int total_pairs = sizeof(predefined_pairs) / sizeof(predefined_pairs[0]);
-        int used[20] = {0}; // 标记已使用的对
+        int used[20] = {0}; // Track which pairs have been used
         int generated = 0;
         
         srand(time(NULL));
         
-        // 随机选择10对不重复的查询
+        // Randomly select 10 unique pairs from the predefined list
         while (generated < 10 && generated < total_pairs) {
             int idx = rand() % total_pairs;
             if (!used[idx]) {
                 int s = predefined_pairs[idx][0];
                 int t = predefined_pairs[idx][1];
                 
-                // 检查节点是否在有效范围内
+                // Ensure nodes are within the graph's bounds
                 if (s >= 0 && s < g->num_nodes && t >= 0 && t < g->num_nodes) {
                     fprintf(fp, "%d %d\n", s, t);
                     used[idx] = 1;
@@ -265,7 +263,8 @@ void generate_small_test_queries(const char* folder, Graph* g) {
             }
         }
         
-        // 如果预定义的节点对不够10个，用其他预定义对补充
+        // If we failed to get 10 (e.g., due to a small graph),
+        // fill the rest by iterating sequentially.
         if (generated < 10) {
             printf("Adding more predefined pairs...\n");
             for (int i = 0; i < total_pairs && generated < 10; i++) {
@@ -291,9 +290,7 @@ void generate_small_test_queries(const char* folder, Graph* g) {
 }
 
 /**
- * @brief 生成边界情况查询文件
- * @param folder 查询文件保存的文件夹路径
- * @param g 图结构指针
+ * Generates queries for various graph boundary conditions.
  */
 void generate_edge_case_queries(const char* folder, Graph* g) {
     char filename[256];
@@ -304,16 +301,19 @@ void generate_edge_case_queries(const char* folder, Graph* g) {
         if (g->num_nodes >= 1) {
             printf("Generating edge case queries...\n");
             
-            // 各种边界情况
-            fprintf(fp, "0 0\n");                    // 自环
+            // 1. Self-loop
+            fprintf(fp, "0 0\n");
             
             if (g->num_nodes >= 2) {
-                fprintf(fp, "0 1\n");                    // 正常边
-                fprintf(fp, "%d %d\n", g->num_nodes-1, 0); // 最大节点到最小节点
-                fprintf(fp, "0 %d\n", g->num_nodes-1);   // 最小节点到最大节点
+                // 2. Simple path
+                fprintf(fp, "0 1\n");
+                // 3. Path from max node to min node
+                fprintf(fp, "%d %d\n", g->num_nodes-1, 0);
+                // 4. Path from min node to max node
+                fprintf(fp, "0 %d\n", g->num_nodes-1);
             }
             
-            // 寻找孤立节点（没有出边的节点）
+            // 5. Find an isolated node (no outgoing edges)
             int isolated_node = -1;
             for (int i = 0; i < g->num_nodes; i++) {
                 if (g->adj[i] == NULL) {
@@ -323,14 +323,14 @@ void generate_edge_case_queries(const char* folder, Graph* g) {
             }
             
             if (isolated_node != -1) {
-                fprintf(fp, "%d 0\n", isolated_node);  // 从孤立节点出发
-                fprintf(fp, "0 %d\n", isolated_node);  // 到孤立节点
+                fprintf(fp, "%d 0\n", isolated_node);  // Query from isolated node
+                fprintf(fp, "0 %d\n", isolated_node);  // Query to isolated node
                 printf("Found isolated node: %d\n", isolated_node);
             } else {
                 printf("No isolated nodes found\n");
             }
             
-            // 寻找高度数节点
+            // 6. Find a high-degree node
             int max_degree_node = 0;
             int max_degree = 0;
             for (int i = 0; i < g->num_nodes; i++) {
@@ -349,7 +349,7 @@ void generate_edge_case_queries(const char* folder, Graph* g) {
             }
             
             if (max_degree > 0) {
-                // 从高度数节点到它的一个邻居
+                // Query from high-degree node to one of its neighbors
                 Edge* e = g->adj[max_degree_node];
                 if (e != NULL) {
                     fprintf(fp, "%d %d\n", max_degree_node, e->to);
@@ -368,11 +368,8 @@ void generate_edge_case_queries(const char* folder, Graph* g) {
 }
 
 /**
- * @brief 验证查询文件的有效性
- * @param folder 查询文件所在的文件夹路径
- * @param filename 查询文件名
- * @param g 图结构指针（用于验证节点索引）
- * @return 有效查询对数量，-1表示文件打开失败
+ * Validates a query file by checking all (s, t) pairs.
+ * Ensures that 0 <= s < num_nodes and 0 <= t < num_nodes.
  */
 int validate_query_file(const char* folder, const char* filename, Graph* g) {
     char full_path[512];
@@ -388,8 +385,10 @@ int validate_query_file(const char* folder, const char* filename, Graph* g) {
     int total_pairs = 0;
     int s, t;
     
+    // Read all pairs from the file
     while (fscanf(fp, "%d %d", &s, &t) == 2) {
         total_pairs++;
+        // Check if nodes are within the valid 0-based index range
         if (s >= 0 && s < g->num_nodes && t >= 0 && t < g->num_nodes) {
             valid_pairs++;
         } else {
@@ -404,6 +403,9 @@ int validate_query_file(const char* folder, const char* filename, Graph* g) {
     return valid_pairs;
 }
 
+/**
+ * Main entry point for the query generation executable.
+ */
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         printf("Usage: %s <graph_file> <queries_folder>\n", argv[0]);
@@ -414,10 +416,11 @@ int main(int argc, char* argv[]) {
     const char* graph_file = argv[1];
     const char* queries_folder = argv[2];
     
-    // 创建查询文件夹
+    // Create the target directory if it doesn't exist
     create_directory(queries_folder);
     
     printf("Loading graph: %s\n", graph_file);
+    // Load the graph only to get its properties (e.g., num_nodes)
     Graph* g = load_dimacs_graph(graph_file);
     if (!g) {
         fprintf(stderr, "Error: failed to load graph file.\n");
@@ -426,13 +429,13 @@ int main(int argc, char* argv[]) {
     
     printf("Graph loaded successfully: %d nodes\n", g->num_nodes);
     
-    // 生成各种测试情况的查询文件
+    // Generate all defined query files
     printf("\nGenerating query files in folder: %s\n", queries_folder);
     printf("==========================================\n");
     
     generate_empty_queries(queries_folder);
     generate_single_node_queries(queries_folder, g);
-    generate_small_test_queries(queries_folder, g);  // 现在使用相邻节点生成
+    generate_small_test_queries(queries_folder, g);
     generate_complete_graph_queries(queries_folder, g, 100);
     generate_normal_queries(queries_folder, g, 1000);
     generate_large_scale_queries(queries_folder, g, 10000);
@@ -441,7 +444,7 @@ int main(int argc, char* argv[]) {
     printf("\n==========================================\n");
     printf("All query files generated successfully!\n");
     
-    // 验证生成的查询文件
+    // Run validation on the generated files
     printf("\nValidating generated query files:\n");
     validate_query_file(queries_folder, "normal_queries_1000.txt", g);
     validate_query_file(queries_folder, "large_scale_queries_10000.txt", g);
