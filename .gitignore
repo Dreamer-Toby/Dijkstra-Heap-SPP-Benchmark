@@ -53,3 +53,13 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# 忽略 DIMACS Challenge 数据集文件夹
+data/
+
+# 忽略本地编译产物，例如可执行文件
+*.exe
+*.out
+
+# 忽略 IDE 相关文件，如 VSCode 的设置等
+.vscode/
